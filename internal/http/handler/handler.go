@@ -9,7 +9,7 @@ import (
 	"github.com/yahn1ukov/personal-blog/internal/repository"
 	"github.com/yahn1ukov/personal-blog/internal/service"
 	"github.com/yahn1ukov/personal-blog/pkg/respond"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type Handler struct {
@@ -23,14 +23,9 @@ func New(service service.Service) *Handler {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(1 << 20); err != nil {
-		respond.Error(w, http.StatusBadRequest, err)
-		return
-	}
-
 	var input dto.CreateInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		respond.Error(w, http.StatusInternalServerError, err)
+		respond.Error(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -60,9 +55,9 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	objectID, err := primitive.ObjectIDFromHex(id)
+	objectID, err := bson.ObjectIDFromHex(id)
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, err)
+		respond.Error(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -83,20 +78,15 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	objectID, err := primitive.ObjectIDFromHex(id)
+	objectID, err := bson.ObjectIDFromHex(id)
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	if err = r.ParseMultipartForm(1 << 20); err != nil {
 		respond.Error(w, http.StatusBadRequest, err)
 		return
 	}
 
 	var input dto.UpdateInput
 	if err = json.NewDecoder(r.Body).Decode(&input); err != nil {
-		respond.Error(w, http.StatusInternalServerError, err)
+		respond.Error(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -121,9 +111,9 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	objectID, err := primitive.ObjectIDFromHex(id)
+	objectID, err := bson.ObjectIDFromHex(id)
 	if err != nil {
-		respond.Error(w, http.StatusInternalServerError, err)
+		respond.Error(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -133,7 +123,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		respond.Error(w, http.StatusNotFound, err)
+		respond.Error(w, http.StatusInternalServerError, err)
 		return
 	}
 

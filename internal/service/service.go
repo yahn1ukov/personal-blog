@@ -8,14 +8,15 @@ import (
 	"github.com/yahn1ukov/personal-blog/internal/model"
 	"github.com/yahn1ukov/personal-blog/internal/repository"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type Service interface {
 	Create(context.Context, *dto.CreateInput) error
 	GetAll(context.Context) ([]*dto.GetOutput, error)
-	GetByID(context.Context, primitive.ObjectID) (*dto.GetOutput, error)
-	Update(context.Context, primitive.ObjectID, *dto.UpdateInput) error
-	Delete(context.Context, primitive.ObjectID) error
+	GetByID(context.Context, bson.ObjectID) (*dto.GetOutput, error)
+	Update(context.Context, bson.ObjectID, *dto.UpdateInput) error
+	Delete(context.Context, bson.ObjectID) error
 }
 
 type service struct {
@@ -40,6 +41,7 @@ func (s *service) Create(ctx context.Context, input *dto.CreateInput) error {
 	}
 
 	blog := &model.Blog{
+		ID:          bson.ObjectID(primitive.NewObjectID()),
 		Title:       input.Title,
 		Content:     input.Content,
 		Tags:        input.Tags,
@@ -61,7 +63,7 @@ func (s *service) GetAll(ctx context.Context) ([]*dto.GetOutput, error) {
 		output = append(
 			output,
 			&dto.GetOutput{
-				ID:          blog.ID,
+				ID:          blog.ID.Hex(),
 				Title:       blog.Title,
 				Content:     blog.Content,
 				Tags:        blog.Tags,
@@ -74,14 +76,14 @@ func (s *service) GetAll(ctx context.Context) ([]*dto.GetOutput, error) {
 	return output, nil
 }
 
-func (s *service) GetByID(ctx context.Context, objectID primitive.ObjectID) (*dto.GetOutput, error) {
+func (s *service) GetByID(ctx context.Context, objectID bson.ObjectID) (*dto.GetOutput, error) {
 	blog, err := s.repository.GetByID(ctx, objectID)
 	if err != nil {
 		return nil, err
 	}
 
 	output := &dto.GetOutput{
-		ID:          blog.ID,
+		ID:          blog.ID.Hex(),
 		Title:       blog.Title,
 		Content:     blog.Content,
 		Tags:        blog.Tags,
@@ -92,7 +94,7 @@ func (s *service) GetByID(ctx context.Context, objectID primitive.ObjectID) (*dt
 	return output, nil
 }
 
-func (s *service) Update(ctx context.Context, objectID primitive.ObjectID, input *dto.UpdateInput) error {
+func (s *service) Update(ctx context.Context, objectID bson.ObjectID, input *dto.UpdateInput) error {
 	updatedFields := make(map[string]interface{})
 
 	if input.Title != nil && *input.Title != "" {
@@ -116,6 +118,6 @@ func (s *service) Update(ctx context.Context, objectID primitive.ObjectID, input
 	return s.repository.Update(ctx, objectID, updatedFields)
 }
 
-func (s *service) Delete(ctx context.Context, objectID primitive.ObjectID) error {
+func (s *service) Delete(ctx context.Context, objectID bson.ObjectID) error {
 	return s.repository.Delete(ctx, objectID)
 }

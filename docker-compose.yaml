@@ -1,0 +1,19 @@
+services:
+  api:
+    image: personal-blog:latest
+    ports:
+      - 8000:8000
+    depends_on:
+      - mongo
+  
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root 
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

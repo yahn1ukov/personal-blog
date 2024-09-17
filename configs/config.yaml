@@ -2,4 +2,4 @@ http:
   port: 8000
 database:
   mongo:
-    url: mongodb://root:root@localhost:27017/
+    url: mongodb://root:root@mongo:27017/

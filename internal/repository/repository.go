@@ -6,7 +6,6 @@ import (
 
 	"github.com/yahn1ukov/personal-blog/internal/database"
 	"github.com/yahn1ukov/personal-blog/internal/model"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -15,9 +14,9 @@ import (
 type Repository interface {
 	Create(context.Context, *model.Blog) error
 	GetAll(context.Context) ([]*model.Blog, error)
-	GetByID(context.Context, primitive.ObjectID) (*model.Blog, error)
-	Update(context.Context, primitive.ObjectID, map[string]interface{}) error
-	Delete(context.Context, primitive.ObjectID) error
+	GetByID(context.Context, bson.ObjectID) (*model.Blog, error)
+	Update(context.Context, bson.ObjectID, map[string]interface{}) error
+	Delete(context.Context, bson.ObjectID) error
 }
 
 type repository struct {
@@ -43,7 +42,7 @@ func (r *repository) Create(ctx context.Context, blog *model.Blog) error {
 }
 
 func (r *repository) GetAll(ctx context.Context) ([]*model.Blog, error) {
-	options := options.Find().SetSort(bson.D{{Key: "published_at", Value: -1}})
+	options := options.Find().SetSort(bson.D{{Key: "publishedAt", Value: -1}})
 
 	cursor, err := r.collection.Find(ctx, bson.M{}, options)
 	if err != nil {
@@ -59,7 +58,7 @@ func (r *repository) GetAll(ctx context.Context) ([]*model.Blog, error) {
 	return blogs, nil
 }
 
-func (r *repository) GetByID(ctx context.Context, objectID primitive.ObjectID) (*model.Blog, error) {
+func (r *repository) GetByID(ctx context.Context, objectID bson.ObjectID) (*model.Blog, error) {
 	var blog model.Blog
 	if err := r.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&blog); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -72,28 +71,29 @@ func (r *repository) GetByID(ctx context.Context, objectID primitive.ObjectID) (
 	return &blog, nil
 }
 
-func (r *repository) Update(ctx context.Context, objectID primitive.ObjectID, updatedFields map[string]interface{}) error {
-	update := bson.M{"$set": updatedFields}
+func (r *repository) Update(ctx context.Context, objectID bson.ObjectID, updatedFields map[string]interface{}) error {
 	options := options.Update().SetUpsert(false)
 
-	if _, err := r.collection.UpdateByID(ctx, objectID, update, options); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return ErrNotFound
-		}
-
+	result, err := r.collection.UpdateByID(ctx, objectID, bson.M{"$set": updatedFields}, options)
+	if err != nil {
 		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return ErrNotFound
 	}
 
 	return nil
 }
 
-func (r *repository) Delete(ctx context.Context, objectID primitive.ObjectID) error {
-	if _, err := r.collection.DeleteOne(ctx, bson.M{"_id": objectID}); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return ErrNotFound
-		}
-
+func (r *repository) Delete(ctx context.Context, objectID bson.ObjectID) error {
+	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": objectID})
+	if err != nil {
 		return err
+	}
+
+	if result.DeletedCount == 0 {
+		return ErrNotFound
 	}
 
 	return nil
